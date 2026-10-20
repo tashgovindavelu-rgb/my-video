@@ -1,0 +1,44 @@
+name: Analyze footage
+on:
+  push:
+    paths: ['.github/workflows/analyze-footage.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install 'gdown==5.2.0' 'faster-whisper==1.1.1'
+      - name: Download and transcribe
+        env:
+          DRIVE_FILE_ID: 1uZYX3KccUVB_HFAWtivdisQgr6RkC7DP
+        run: |
+          mkdir -p analysis
+          gdown --quiet "$DRIVE_FILE_ID" -O analysis/source.mp4
+          python - <<'PY'
+          import json, av
+          from faster_whisper import WhisperModel
+          container=av.open('analysis/source.mp4')
+          v=container.streams.video[0]
+          print('VIDEO_METADATA',json.dumps({'width':v.width,'height':v.height,'duration':container.duration/1000000}))
+          model=WhisperModel('small',device='cpu',compute_type='int8',cpu_threads=4)
+          segments,info=model.transcribe('analysis/source.mp4',word_timestamps=True,vad_filter=True,beam_size=5)
+          words=[]
+          for s in segments:
+              print('SPEECH',json.dumps({'start':s.start,'end':s.end,'text':s.text}))
+              for w in s.words or []:
+                  words.append({'text':w.word.strip(),'start':w.start,'end':w.end})
+          with open('analysis/captions.json','w') as f: json.dump(words,f)
+          print('WORDS_JSON',json.dumps(words))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: timed-transcript
+          path: analysis/captions.json
+          retention-days: 3
