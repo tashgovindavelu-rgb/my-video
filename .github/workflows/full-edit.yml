@@ -1,0 +1,54 @@
+name: Full Seedmediaa edit
+on:
+  push:
+    paths: ['.github/workflows/full-edit.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  edit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: remotion
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: npm install --no-audit --no-fund
+      - run: npm run check
+      - run: python -m pip install gdown==5.2.0 pillow
+      - run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg
+      - name: Prepare editorial cut and original sound design
+        run: |
+          mkdir -p public out
+          gdown --quiet 1uZYX3KccUVB_HFAWtivdisQgr6RkC7DP -O public/source.mp4
+          python prepare-edit.py
+      - name: Render full edit
+        run: node edit-render.mjs
+      - name: Verify export and show composed frames
+        run: |
+          ffprobe -v error -show_entries format=duration:stream=codec_name,width,height -of json out/Tash-Seedmediaa-Full-Edit.mp4
+          ffmpeg -v error -i out/Tash-Seedmediaa-Full-Edit.mp4 -f null -
+          python - <<'PY'
+          from PIL import Image,ImageDraw
+          import io,base64
+          sheet=Image.new('RGB',(720,832))
+          for i in range(6):
+              im=Image.open('out/frame-'+str(i)+'.png');im.thumbnail((240,416))
+              sheet.paste(im,((i%3)*240,(i//3)*416))
+          b=io.BytesIO();sheet.save(b,format='JPEG',quality=75)
+          print('COMPOSED_IMAGE:'+base64.b64encode(b.getvalue()).decode())
+          PY
+          rm out/picture.mp4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Tash-Seedmediaa-Full-Edit
+          path: remotion/out/
+          retention-days: 7
+          if-no-files-found: error
