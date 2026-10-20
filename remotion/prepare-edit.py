@@ -18,7 +18,7 @@ words=[dict(text=w['text'],start=round(mapped(w['start']),3),end=round(mapped(w[
 cues=[]
 for start,end,kind,title,subtitle in [
 (.3,2.7,'timer','',''),
-(8.4,10.25,'bad','OUTDATED?\\nCONFUSING?','Visitors leave before they call.'),
+(8.4,10.25,'bad','OUTDATED OR CONFUSING?','Visitors leave before they call.'),
 (10.7,12.28,'competitor','',''),
 (14.5,16.85,'name','',''),
 (17.5,19.9,'good','BUILT TO WIN.','Make the first impression count.'),
