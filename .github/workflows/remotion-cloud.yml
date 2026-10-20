@@ -1,0 +1,53 @@
+name: Remotion cloud
+on:
+  push:
+    paths:
+      - 'remotion/**'
+      - '.github/workflows/remotion-cloud.yml'
+  workflow_dispatch:
+    inputs:
+      source_url:
+        description: 'Optional direct HTTPS video URL (leave blank for setup test)'
+        required: false
+        type: string
+permissions:
+  contents: read
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: remotion
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm run check
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Download source when supplied
+        env:
+          INPUT_URL: ${{ inputs.source_url }}
+          SECRET_URL: ${{ secrets.SOURCE_VIDEO_URL }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          mkdir -p public
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            VIDEO_URL="${SECRET_URL:-$INPUT_URL}"
+            if [ -n "$VIDEO_URL" ]; then
+              echo "::add-mask::$VIDEO_URL"
+              case "$VIDEO_URL" in
+                https://*) curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --max-time 300 --output public/source.mp4 "$VIDEO_URL" ;;
+                *) echo "Source must use HTTPS"; exit 1 ;;
+              esac
+            fi
+          fi
+      - run: npm run render
+      - uses: actions/upload-artifact@v4
+        with:
+          name: remotion-output
+          path: remotion/out/
+          retention-days: 3
+          if-no-files-found: error

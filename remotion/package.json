@@ -1,0 +1,21 @@
+{
+  "name": "tash-cloud-video",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "render": "node render.mjs"
+  },
+  "dependencies": {
+    "remotion": "4.0.537",
+    "@remotion/bundler": "4.0.537",
+    "@remotion/renderer": "4.0.537",
+    "react": "19.0.0",
+    "react-dom": "19.0.0"
+  },
+  "devDependencies": {
+    "typescript": "5.8.3",
+    "@types/react": "19.0.10",
+    "@types/react-dom": "19.0.4"
+  }
+}
