@@ -1,0 +1,30 @@
+name: Inspect source frames
+on:
+  push:
+    paths: ['.github/workflows/inspect-footage.yml']
+permissions:
+  contents: read
+jobs:
+  frames:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install gdown==5.2.0 av pillow
+      - run: |
+          gdown --quiet 1uZYX3KccUVB_HFAWtivdisQgr6RkC7DP -O source.mp4
+          python - <<'PY'
+          import av,base64,io
+          from PIL import Image,ImageDraw
+          c=av.open('source.mp4')
+          sheet=Image.new('RGB',(720,416))
+          for i,t in enumerate([1,9,17]):
+              c.seek(int(t*1000000))
+              for f in c.decode(video=0):
+                  if f.time>=t:
+                      im=f.to_image(); im.thumbnail((240,416))
+                      sheet.paste(im,(i*240,0));break
+          out=io.BytesIO();sheet.save(out,format='JPEG',quality=65)
+          print('FRAME_IMAGE:'+base64.b64encode(out.getvalue()).decode())
+          PY
