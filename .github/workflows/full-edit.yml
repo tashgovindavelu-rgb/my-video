@@ -52,3 +52,4 @@ jobs:
           path: remotion/out/
           retention-days: 7
           if-no-files-found: error
+# Render revision 2: corrected illustration heading.
